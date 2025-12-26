@@ -14,7 +14,7 @@ import time
 from datetime import datetime
 
 # ========== Configuration Parameters ==========
-epochs_to_save = [20]
+epochs_to_save = [50]
 total_epochs = epochs_to_save[-1]  # 总共训练40个epoch
 
 lr = 0.0001
@@ -508,3 +508,4 @@ if __name__ == "__main__":
     print(f"   Average actual epochs: {df['Actual_Epochs_Trained'].mean():.1f}")
 
     print(f"   Average final validation accuracy: {df['Final_Val_Accuracy'].mean():.2f}%")
+

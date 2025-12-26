@@ -26,7 +26,7 @@ val_data_dir = '/root/autodl-tmp/val'
 height_threshold = 4.5
 
 sampling_N_combinations = [
-    [6,12,14,18]
+    [6,11,14,19]
 ]
 
 base_model_save_dir = '/root/autodl-tmp/program/model_mamba/sample_1/'
@@ -536,4 +536,5 @@ if __name__ == "__main__":
     df = pd.DataFrame(all_stats)
     df.to_excel(excel_log_path, index=False, engine='openpyxl')
     print(f"\n🎉 All models training completed!")
+
     print(f"📊 Statistics saved to {excel_log_path}")

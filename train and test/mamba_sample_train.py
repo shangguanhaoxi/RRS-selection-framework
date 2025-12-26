@@ -13,7 +13,7 @@ import time
 from datetime import datetime
 
 # ========== Configuration Parameters ==========
-epochs_to_save = [20]
+epochs_to_save = [50]
 total_epochs = epochs_to_save[-1]
 
 lr = 0.0001
@@ -538,3 +538,4 @@ if __name__ == "__main__":
     print(f"\n🎉 All models training completed!")
 
     print(f"📊 Statistics saved to {excel_log_path}")
+

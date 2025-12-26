@@ -26,7 +26,7 @@ val_data_dir = '/root/autodl-tmp/val'
 height_threshold = 4.5
 
 sampling_N_combinations = [
-    [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+    [6,11,14,19]
 ]
 
 base_model_save_dir = '/root/autodl-tmp/program/model_mobilenet/sample_1/'
@@ -426,4 +426,5 @@ if __name__ == "__main__":
     df = pd.DataFrame(all_stats)
     df.to_excel(excel_log_path, index=False, engine='openpyxl')
     print(f"\n🎉 All models training completed!")
+
     print(f"📊 Statistics saved to {excel_log_path}")

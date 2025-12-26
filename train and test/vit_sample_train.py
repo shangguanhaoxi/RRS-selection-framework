@@ -27,7 +27,7 @@ height_threshold = 4.5
 
 # 定义多个sampling_N_list组合
 sampling_N_combinations = [
-    [6,12,14,18]
+    [6,11,14,19]
 ]
 
 # 修改模型保存路径格式
@@ -506,4 +506,5 @@ if __name__ == "__main__":
     print(f"   Average epoch time: {df['Average_Epoch_Time_Seconds'].mean():.2f}s")
     print(f"   Average data reduction: {df['Efficiency_Gain_Percentage'].iloc[0]}")
     print(f"   Average actual epochs: {df['Actual_Epochs_Trained'].mean():.1f}")
+
     print(f"   Average final validation accuracy: {df['Final_Val_Accuracy'].mean():.2f}%")

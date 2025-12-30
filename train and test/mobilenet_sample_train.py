@@ -225,25 +225,25 @@ def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir
         data_loading_time_epoch = 0.0
         forward_time_epoch, backward_time_epoch, update_time_epoch = 0.0, 0.0, 0.0
 
-        # 统计实际处理的batch数量
+        
         actual_batches_processed = 0
 
         for batch_idx, (batch_samples, batch_labels) in enumerate(train_loader):
-            # 数据加载部分计时 (CPU to GPU transfer)
+      
             data_start = time.time()
             # Move all data to GPU at once
             batch_samples_gpu = [samples.to(device, non_blocking=True) for samples in batch_samples]
             batch_labels_gpu = [labels.to(device, non_blocking=True) for labels in batch_labels]
             if torch.cuda.is_available():
-                torch.cuda.synchronize()  # 确保数据传输完成
+                torch.cuda.synchronize() 
             data_loading_time_epoch += time.time() - data_start
 
-            # 网络计算部分计时 - 细分为Forward、Backward、Update
+         
             # Process each batch group separately
             for samples, labels in zip(batch_samples_gpu, batch_labels_gpu):
                 actual_batches_processed += 1
 
-                # 重置梯度
+      
                 optimizer.zero_grad()
 
                 # Forward pass
@@ -251,21 +251,21 @@ def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir
                 outputs = model(samples)
                 loss = criterion(outputs, labels)
                 if torch.cuda.is_available():
-                    torch.cuda.synchronize()  # 确保前向传播完成
+                    torch.cuda.synchronize()  
                 forward_time_epoch += time.time() - forward_start
 
                 # Backward pass
                 backward_start = time.time()
                 loss.backward()
                 if torch.cuda.is_available():
-                    torch.cuda.synchronize()  # 确保反向传播完成
+                    torch.cuda.synchronize() 
                 backward_time_epoch += time.time() - backward_start
 
                 # Update parameters
                 update_start = time.time()
                 optimizer.step()
                 if torch.cuda.is_available():
-                    torch.cuda.synchronize()  # 确保参数更新完成
+                    torch.cuda.synchronize() 
                 update_time_epoch += time.time() - update_start
 
                 train_loss += loss.item() * samples.size(0)
@@ -289,13 +289,13 @@ def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir
                     # Move data to device right before using it
                     samples, labels = samples.to(device), labels.to(device)
                     if torch.cuda.is_available():
-                        torch.cuda.synchronize()  # 确保数据传输完成
+                        torch.cuda.synchronize()
 
                     val_forward_start = time.time()
                     outputs = model(samples)
                     loss = criterion(outputs, labels)
                     if torch.cuda.is_available():
-                        torch.cuda.synchronize()  # 确保前向传播完成
+                        torch.cuda.synchronize() 
                     val_forward_time += time.time() - val_forward_start
 
                     val_loss += loss.item() * samples.size(0)
@@ -353,7 +353,7 @@ def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir
 
         early_stopping(epoch_val_loss, model, model_save_path)
         if early_stopping.early_stop:
-            print(f"🚨 Early stopping triggered at epoch {epoch + 1}")
+            print(f" Early stopping triggered at epoch {epoch + 1}")
             break
 
     total_training_time = time.time() - start_time
@@ -425,9 +425,10 @@ if __name__ == "__main__":
 
     df = pd.DataFrame(all_stats)
     df.to_excel(excel_log_path, index=False, engine='openpyxl')
-    print(f"\n🎉 All models training completed!")
+    print(f"\n All models training completed!")
 
-    print(f"📊 Statistics saved to {excel_log_path}")
+    print(f" Statistics saved to {excel_log_path}")
+
 
 
 

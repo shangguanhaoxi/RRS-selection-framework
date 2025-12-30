@@ -13,27 +13,25 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from torchvision.models import mobilenet_v2
 
-# === 配置参数 ===
 N_values = [3,9,13,16]
 batch_size = 64
-epochs = 10  # 用于图表标题，实际测试不依赖此值
+epochs = 10 
 alpha = 4.5
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# 包含所有模型文件夹 (如 model_12_18 ) 的父目录
 models_parent_dir = '/root/autodl-tmp/program/model_mobilenet/sample_1'
-# 测试图像目录
+
 # '/root/autodl-tmp/program/model_vit/data_gaussian/test'
 # '/root/autodl-tmp/program/model_vit/data_test_normal/test'
 image_dir = '/root/autodl-tmp/program/model_vit/data_test_normal/test'
-# 基础输出目录 (所有结果的根目录)
+
 # /root/autodl-tmp/program/model_mobilenet/sample_results/2
 # /root/autodl-tmp/program/model_mobilenet/guassian_sample_results/2
 
 base_output_dir = '/root/autodl-tmp/program/model_mobilenet/sample_1/1'
 excel_load = 'mobilenet_guassian_confusion.xlsx'
 
-# 确保基础输出目录存在
+
 os.makedirs(base_output_dir, exist_ok=True)
 
 
@@ -42,15 +40,15 @@ class MobileNetModel(nn.Module):
         super().__init__()
         self.mobilenet_input_size = 224
 
-        # 输入预处理
+       
         self.adaptive_pool = nn.AdaptiveAvgPool2d((self.mobilenet_input_size, self.mobilenet_input_size))
 
-        # 使用MobileNetV2作为主干网络
+        
         self.backbone = mobilenet_v2(pretrained=False)
-        # 修改第一层卷积以适应单通道输入
+       
         self.backbone.features[0][0] = nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=1, bias=False)
 
-        # 替换分类器
+   
         in_features = self.backbone.classifier[1].in_features
         self.backbone.classifier = nn.Sequential(
             nn.Dropout(0.2),
@@ -58,7 +56,7 @@ class MobileNetModel(nn.Module):
         )
 
     def extract_features(self, x):
-        """提取特征向量"""
+ 
         x = self.adaptive_pool(x)
         features = self.backbone.features(x)
         features = torch.nn.functional.adaptive_avg_pool2d(features, (1, 1))
@@ -71,7 +69,7 @@ class MobileNetModel(nn.Module):
         return x
 
 
-# === 数据处理 ===
+
 class ImageSampler:
     def __init__(self, image_dir, N=11, alpha=None):
         self.image_dir = image_dir
@@ -126,7 +124,7 @@ class HeightThresholdDataset(Dataset):
         sample, label = self.sampler.sample_single_image(img_path)
 
         if sample is None or label is None:
-            # 返回默认值或跳过
+     
             sample = torch.zeros(1, self.N, self.N)
             label = 0
 
@@ -137,7 +135,7 @@ class HeightThresholdDataset(Dataset):
 
 
 def collate_fn(batch):
-    # 过滤掉无效样本
+
     batch = [(s, l) for s, l in batch if s is not None and l is not None]
     if len(batch) == 0:
         return [], []
@@ -167,25 +165,24 @@ def collate_fn(batch):
     return batched_samples, batched_labels
 
 
-# === 可视化函数 ===
+
 def generate_confusion_matrix_data(true_labels, predictions, model_name, N, output_dir):
-    """生成混淆矩阵数据并保存为JSON"""
+
     if len(true_labels) == 0:
         print(f"No data available for confusion matrix for {model_name}, N={N}")
         return None
 
     try:
-        # 确保标签是Python原生类型
+      
         true_labels = [int(label) for label in true_labels]
         predictions = [int(pred) for pred in predictions]
 
-        # 计算混淆矩阵
+ 
         cm = confusion_matrix(true_labels, predictions)
 
-        # 计算归一化混淆矩阵（百分比）
+     
         cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
-        # 保存混淆矩阵数据为JSON
         cm_data = {
             'model_name': model_name,
             'N': N,
@@ -208,31 +205,29 @@ def generate_confusion_matrix_data(true_labels, predictions, model_name, N, outp
 
 
 def generate_tsne_plot(features, labels, model_name, N, output_dir):
-    """生成t-SNE可视化图"""
+
     try:
         if len(features) == 0 or len(labels) == 0:
             print(f"No features available for t-SNE plot for {model_name}, N={N}")
             return None
 
-        # 确保特征和标签是numpy数组
+   
         features_array = np.array(features)
         labels_array = np.array(labels)
 
-        # 如果特征数量太少，跳过t-SNE
         if len(features_array) < 5:
             print(f"Not enough samples for t-SNE ({len(features_array)} samples) for {model_name}, N={N}")
             return None
 
         print(f"Generating t-SNE plot for {model_name}, N={N} with {len(features_array)} samples...")
 
-        # 使用t-SNE降维
         tsne = TSNE(n_components=2, random_state=42, perplexity=min(30, len(features_array) - 1))
         features_2d = tsne.fit_transform(features_array)
 
-        # 创建t-SNE图
+
         plt.figure(figsize=(10, 8))
 
-        # 根据标签着色
+ 
         scatter = plt.scatter(features_2d[:, 0], features_2d[:, 1],
                               c=labels_array, cmap='viridis', alpha=0.7,
                               s=50, edgecolors='w', linewidth=0.5)
@@ -243,7 +238,7 @@ def generate_tsne_plot(features, labels, model_name, N, output_dir):
         plt.xlabel('t-SNE Component 1', fontsize=12)
         plt.ylabel('t-SNE Component 2', fontsize=12)
 
-        # 添加图例
+
         unique_labels = np.unique(labels_array)
         for label in unique_labels:
             mask = labels_array == label
@@ -254,12 +249,12 @@ def generate_tsne_plot(features, labels, model_name, N, output_dir):
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
 
-        # 保存t-SNE图
+
         tsne_path = os.path.join(output_dir, f'tsne_plot_{model_name}_N{N}.svg')
         plt.savefig(tsne_path, format='svg', bbox_inches='tight', dpi=300)
         plt.close()
 
-        # 保存t-SNE数据
+
         tsne_data = {
             'model_name': model_name,
             'N': N,
@@ -283,13 +278,13 @@ def generate_tsne_plot(features, labels, model_name, N, output_dir):
 
 
 def generate_average_confusion_matrix(all_cm_data, model_name, output_dir):
-    """为每个模型生成一个平均的混淆矩阵图"""
+
     try:
         if not all_cm_data:
             print(f"No confusion matrix data available for {model_name}")
             return None, None
 
-        # 计算所有N值的平均归一化混淆矩阵
+
         normalized_matrices = []
         raw_matrices = []
 
@@ -302,17 +297,17 @@ def generate_average_confusion_matrix(all_cm_data, model_name, output_dir):
             print(f"No valid confusion matrix data for {model_name}")
             return None, None
 
-        # 计算平均混淆矩阵
+  
         avg_normalized_cm = np.mean(normalized_matrices, axis=0)
         avg_raw_cm = np.mean(raw_matrices, axis=0)
 
-        # 计算平均准确率
+ 
         avg_accuracy = np.mean([cm_data['accuracy'] for cm_data in all_cm_data if cm_data is not None])
 
-        # 创建图形
+
         plt.figure(figsize=(8, 6))
 
-        # 绘制平均混淆矩阵热力图
+  
         sns.heatmap(avg_normalized_cm,
                     annot=True,
                     fmt='.3f',
@@ -322,25 +317,25 @@ def generate_average_confusion_matrix(all_cm_data, model_name, output_dir):
                     vmax=1,
                     annot_kws={'size': 14, 'weight': 'bold'})
 
-        # 设置标签和标题
+        
         plt.title(f'Average Confusion Matrix - {model_name}\n'
                   f'(Averaged over all N values, Average Accuracy: {avg_accuracy:.1f}%)',
                   fontsize=14, fontweight='bold', pad=20)
         plt.xlabel('Predicted Label', fontsize=12, fontweight='bold')
         plt.ylabel('True Label', fontsize=12, fontweight='bold')
 
-        # 设置刻度标签
+
         plt.xticks([0.5, 1.5], ['Negative', 'Positive'], rotation=0, fontsize=11)
         plt.yticks([0.5, 1.5], ['Negative', 'Positive'], rotation=0, fontsize=11)
 
         plt.tight_layout()
 
-        # 保存平均混淆矩阵图
+
         avg_cm_path = os.path.join(output_dir, f'average_confusion_matrix_{model_name}.svg')
         plt.savefig(avg_cm_path, format='svg', bbox_inches='tight', dpi=300)
         plt.close()
 
-        # 保存平均混淆矩阵数据
+     
         avg_cm_data = {
             'model_name': model_name,
             'average_confusion_matrix_normalized': avg_normalized_cm.tolist(),
@@ -365,23 +360,23 @@ def generate_average_confusion_matrix(all_cm_data, model_name, output_dir):
 
 
 def generate_excel_report(all_avg_cm_data, output_dir):
-    """生成Excel报告，包含所有模型的混淆矩阵数据"""
+
     try:
         if not all_avg_cm_data:
             print("No average confusion matrix data available for Excel report")
             return None
 
-        # 准备Excel数据
+
         excel_data = []
 
         for model_name, avg_cm_data in all_avg_cm_data.items():
             if avg_cm_data is None:
                 continue
 
-            # 提取混淆矩阵的四个值
+    
             cm_normalized = np.array(avg_cm_data['average_confusion_matrix_normalized'])
 
-            # 混淆矩阵的四个单元格：
+    
             # [0,0]: True Negative (TN)
             # [0,1]: False Positive (FP)
             # [1,0]: False Negative (FN)
@@ -398,10 +393,10 @@ def generate_excel_report(all_avg_cm_data, output_dir):
             }
             excel_data.append(row_data)
 
-        # 创建DataFrame
+
         df = pd.DataFrame(excel_data)
 
-        # 设置列的顺序
+
         column_order = [
             'Model_Name',
             'TN_Rate',
@@ -413,17 +408,16 @@ def generate_excel_report(all_avg_cm_data, output_dir):
         ]
         df = df[column_order]
 
-        # 保存Excel文件
+
         excel_path = os.path.join(output_dir, excel_load)
 
-        # 使用ExcelWriter来设置格式
         with pd.ExcelWriter(excel_path, engine='openpyxl') as writer:
             df.to_excel(writer, sheet_name='Confusion Matrix Summary', index=False)
 
-            # 获取工作表对象来设置格式
+        
             worksheet = writer.sheets['Confusion Matrix Summary']
 
-            # 设置列宽
+     
             worksheet.column_dimensions['A'].width = 25  # Model_Name
             worksheet.column_dimensions['B'].width = 12  # TN_Rate
             worksheet.column_dimensions['C'].width = 12  # FP_Rate
@@ -445,7 +439,7 @@ def generate_excel_report(all_avg_cm_data, output_dir):
         return None
 
 
-# === 核心测试逻辑 ===
+
 def load_model(model_path, device):
     model = MobileNetModel(num_classes=2)
     model.load_state_dict(torch.load(model_path, map_location=device))
@@ -509,7 +503,7 @@ def evaluate_model(model, test_loader, device):
 
 
 def find_model_paths(parent_dir):
-    """在父目录下查找所有包含 .pth 文件的子目录，并返回模型路径列表"""
+
     model_paths = []
     if not os.path.isdir(parent_dir):
         print(f"Warning: Parent directory {parent_dir} does not exist or is not a directory.")
@@ -535,7 +529,6 @@ def test_different_N_values():
         print("No model paths found. Exiting.")
         return
 
-    # 收集所有模型的平均混淆矩阵数据
     all_models_avg_cm_data = {}
 
     for model_idx, model_path in enumerate(model_paths):
@@ -549,7 +542,7 @@ def test_different_N_values():
 
         model = load_model(model_path, device)
         results = {}
-        all_cm_data = []  # 收集所有N值的混淆矩阵数据
+        all_cm_data = [] 
 
         for N in N_values:
             print(f"\nTesting with N={N}")
@@ -560,7 +553,6 @@ def test_different_N_values():
             eval_results = evaluate_model(model, test_loader, device)
             results[N] = eval_results
 
-            # 为每个N值生成混淆矩阵JSON文件并收集数据
             if len(eval_results['all_labels']) > 0:
                 cm_data = generate_confusion_matrix_data(
                     eval_results['all_labels'],
@@ -570,7 +562,7 @@ def test_different_N_values():
                 if cm_data:
                     all_cm_data.append(cm_data)
 
-                # 为每个N值生成t-SNE图
+       
                 if len(eval_results['all_features']) > 0:
                     tsne_path = generate_tsne_plot(
                         eval_results['all_features'],
@@ -582,7 +574,7 @@ def test_different_N_values():
             else:
                 print(f"No data collected for N={N}, skipping confusion matrix and t-SNE")
 
-        # 为当前模型生成平均混淆矩阵图
+ 
         avg_cm_path = None
         avg_cm_data = None
         if all_cm_data:
@@ -591,10 +583,10 @@ def test_different_N_values():
             if avg_cm_path:
                 print(f"Average confusion matrix saved: {avg_cm_path}")
 
-            # 保存平均混淆矩阵数据用于Excel报告
+    
             all_models_avg_cm_data[model_folder_name] = avg_cm_data
 
-        # 保存结果到JSON
+
         results_file = os.path.join(model_output_dir, 'all_results.json')
         with open(results_file, 'w') as f:
             serializable_results = {}
@@ -616,7 +608,7 @@ def test_different_N_values():
             r = results[N]
             print(f"{N}\t{r['accuracy']:.2f}%\t{r['recall']:.2f}%\t{r['f1']:.2f}%\t{r['avg_bump_prob']:.4f}")
 
-        # 计算并保存平均值
+
         avg_accuracy = np.mean([results[N]['accuracy'] for N in N_values])
         avg_recall = np.mean([results[N]['recall'] for N in N_values])
         avg_f1 = np.mean([results[N]['f1'] for N in N_values])
@@ -635,7 +627,7 @@ def test_different_N_values():
         with open(results_file, 'w') as f:
             json.dump(all_results, f, indent=4)
 
-        # 绘制性能趋势图
+
         N_list = sorted(results.keys())
         accuracies = [results[N]['accuracy'] for N in N_list]
         recalls = [results[N]['recall'] for N in N_list]
@@ -659,7 +651,6 @@ def test_different_N_values():
         print(f"Combined Metrics SVG saved to: {combined_svg_path}")
         plt.close()
 
-    # 在所有模型测试完成后生成Excel报告
     if all_models_avg_cm_data:
         excel_path = generate_excel_report(all_models_avg_cm_data, base_output_dir)
         if excel_path:
@@ -669,4 +660,5 @@ def test_different_N_values():
 
 
 if __name__ == "__main__":
+
     test_different_N_values()

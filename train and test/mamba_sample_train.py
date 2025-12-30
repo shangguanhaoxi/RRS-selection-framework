@@ -461,7 +461,7 @@ def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir
 
         early_stopping(epoch_val_loss, model, model_save_path)
         if early_stopping.early_stop:
-            print(f"🚨 Early stopping triggered at epoch {epoch + 1}")
+            print(f"Early stopping triggered at epoch {epoch + 1}")
             break
 
     total_training_time = time.time() - start_time
@@ -536,6 +536,7 @@ if __name__ == "__main__":
     print(f"\n All models training completed!")
 
     print(f"Statistics saved to {excel_log_path}")
+
 
 
 

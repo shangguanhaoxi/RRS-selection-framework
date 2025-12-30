@@ -15,7 +15,7 @@ from datetime import datetime
 
 # ========== Configuration Parameters ==========
 epochs_to_save = [50]
-total_epochs = epochs_to_save[-1]  # 总共训练40个epoch
+total_epochs = epochs_to_save[-1]  
 
 lr = 0.0001
 batch_size = 64
@@ -25,20 +25,20 @@ train_data_dir = '/root/autodl-tmp/train'
 val_data_dir = '/root/autodl-tmp/val'
 height_threshold = 4.5
 
-# 定义多个sampling_N_list组合
+
 sampling_N_combinations = [
     [6,11,14,19]
 ]
 
-# 修改模型保存路径格式
+
 base_model_save_dir = '/root/autodl-tmp/program/model_vit/model_vit/sample_1/'
 base_tensorboard_dir = '/root/autodl-tmp/tensorboard_logs_vit'
 
-# 早停机制参数
-patience = 5  # 在验证集上性能没有提升的epoch数
-min_delta = 0.0001  # 认为有提升的最小变化量
 
-# Excel记录文件路径
+patience = 5  
+min_delta = 0.0001  
+
+
 excel_log_path = '/root/autodl-tmp/computational_efficiency_stats_vit.xlsx'
 
 
@@ -85,16 +85,16 @@ class ViT(nn.Module):
         self.target_image_size = target_image_size
         self.mobilenet_input_size = 224
 
-        # 输入预处理（与MobileNet相同）
+        
         self.adaptive_pool = nn.AdaptiveAvgPool2d((self.mobilenet_input_size, self.mobilenet_input_size))
 
-        # 修改 MobileNetV2 并禁用全局池化
+       
         self.backbone = mobilenet_v2(pretrained=False)
         self.backbone.features[0][0] = nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=1)
         self.backbone.classifier = nn.Identity()
-        self.backbone.avgpool = nn.Identity()  # 关键：禁用全局池化
+        self.backbone.avgpool = nn.Identity()  
 
-        # 投影层
+
         self.projection = nn.Sequential(
             nn.Conv2d(1280, 32, kernel_size=1),  # 输入 [B, 1280, 7, 7]
             nn.BatchNorm2d(32),
@@ -102,7 +102,7 @@ class ViT(nn.Module):
             nn.AdaptiveAvgPool2d((target_image_size, target_image_size))  # 输出 [B, 32, 16, 16]
         )
 
-        # ViT 配置
+   
         config = ViTConfig(
             image_size=target_image_size,
             patch_size=4,
@@ -122,7 +122,7 @@ class ViT(nn.Module):
         x = self.adaptive_pool(x)  # [B, 1, H, W] -> [B, 1, 224, 224]
         x = self.backbone.features(x)  # [B, 1, 224, 224] -> [B, 1280, 7, 7]
         x = self.projection(x)  # [B, 1280, 7, 7] -> [B, 32, 16, 16]
-        outputs = self.vit(x)  # ViT 处理
+        outputs = self.vit(x) 
         sequence_output = outputs.last_hidden_state
         features = sequence_output.mean(dim=1) + sequence_output.max(dim=1).values
         return self.classifier(features)
@@ -222,23 +222,23 @@ def collate_fn(batch):
 
 
 def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir):
-    """训练单个模型，使用指定的sampling_N_list组合"""
+
     print(f"\n{'=' * 60}")
     print(f"Training ViT model with sampling_N_list: {sampling_N_list}")
     print(f"{'=' * 60}")
 
-    start_time = time.time()  # 记录开始时间
+    start_time = time.time() 
 
     # ========== Data Loading ==========
     print("Loading datasets...")
 
-    # 训练集：使用sampling_N_list中的所有采样值
+
     all_train_datasets = []
     for sampling_N in sampling_N_list:
         dataset = HeightThresholdDataset(train_data_dir, sampling_N, height_threshold, transform)
         all_train_datasets.append(dataset)
 
-    # 验证集：使用与训练集相同的sampling_N_list组合
+ 
     all_val_datasets = []
     for sampling_N in sampling_N_list:
         dataset = HeightThresholdDataset(val_data_dir, sampling_N, height_threshold, transform)
@@ -253,15 +253,15 @@ def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir
     # ========== Training Setup ==========
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # 创建ViT模型、优化器、损失函数和TensorBoard writer
+
     model = ViT(num_classes=2).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
-    # 添加余弦退火学习率调度器
+
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=total_epochs)
     writer = SummaryWriter(log_dir=tensorboard_dir)
     criterion = nn.CrossEntropyLoss()
 
-    # 初始化早停机制
+
     early_stopping = EarlyStopping(patience=patience, min_delta=min_delta, verbose=True)
     model_save_path = os.path.join(model_save_dir, 'model_vit.pth')
 
@@ -286,7 +286,7 @@ def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir
         train_loss, train_correct, total_samples = 0.0, 0, 0
         train_batches = 0
 
-        # 训练阶段
+     
         for batch_idx, (batch_samples, batch_labels) in enumerate(train_loader):
             for samples, labels in zip(batch_samples, batch_labels):
                 samples, labels = samples.to(device), labels.to(device)
@@ -303,15 +303,15 @@ def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir
                 total_samples += samples.size(0)
                 train_batches += 1
 
-        # 在每个epoch结束时更新学习率
+    
         scheduler.step()
         current_lr = optimizer.param_groups[0]['lr']
 
-        # 计算训练指标
+      
         epoch_train_loss = train_loss / total_samples if total_samples > 0 else 0
         epoch_train_acc = 100 * train_correct / total_samples if total_samples > 0 else 0
 
-        # 验证阶段
+ 
         model.eval()
         val_loss, val_correct, val_total = 0.0, 0, 0
         val_batches = 0
@@ -328,7 +328,7 @@ def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir
                     val_total += samples.size(0)
                     val_batches += 1
 
-        # 计算验证指标
+
         epoch_val_loss = val_loss / val_total if val_total > 0 else 0
         epoch_val_acc = 100 * val_correct / val_total if val_total > 0 else 0
 
@@ -337,38 +337,38 @@ def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir
         epoch_times.append(epoch_time)
         actual_epochs_trained = epoch + 1
 
-        # 详细打印每个epoch的信息
+
         print(f"\n{'=' * 80}")
         print(f"Epoch {epoch + 1}/{total_epochs} - ViT Model")
         print(f"{'=' * 80}")
 
-        # 时间信息
-        print(f"⏰ Time Metrics:")
+   
+        print(f"Time Metrics:")
         print(f"   - Epoch Time: {epoch_time:.2f}s")
         print(f"   - Cumulative Time: {total_training_time:.2f}s ({total_training_time / 60:.2f} minutes)")
 
-        # 训练信息
-        print(f"📊 Training Metrics:")
+ 
+        print(f"Training Metrics:")
         print(f"   - Loss: {epoch_train_loss:.4f}")
         print(f"   - Accuracy: {epoch_train_acc:.2f}%")
         print(f"   - Correct/Total: {train_correct}/{total_samples}")
         print(f"   - Batches Processed: {train_batches}")
 
-        # 验证信息
-        print(f"🔍 Validation Metrics:")
+
+        print(f"Validation Metrics:")
         print(f"   - Loss: {epoch_val_loss:.4f}")
         print(f"   - Accuracy: {epoch_val_acc:.2f}%")
         print(f"   - Correct/Total: {val_correct}/{val_total}")
         print(f"   - Batches Processed: {val_batches}")
 
-        # 学习率和优化信息
-        print(f"⚙️  Optimization Metrics:")
+
+        print(f" Optimization Metrics:")
         print(f"   - Learning Rate: {current_lr:.2e}")
         print(f"   - Early Stopping Counter: {early_stopping.counter}/{patience}")
 
-        # 进度信息
+
         progress = (epoch + 1) / total_epochs * 100
-        print(f"📈 Progress:")
+        print(f"Progress:")
         print(f"   - Progress: {progress:.1f}% ({epoch + 1}/{total_epochs})")
         print(f"   - Estimated Remaining Time: {(total_epochs - epoch - 1) * np.mean(epoch_times):.2f}s")
 
@@ -384,29 +384,29 @@ def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir
         early_stopping(epoch_val_loss, model, model_save_path)
 
         if early_stopping.early_stop:
-            print(f"\n🚨 Early stopping triggered at epoch {epoch + 1}!")
+            print(f"\n Early stopping triggered at epoch {epoch + 1}!")
             print(f"   - Best validation loss: {early_stopping.val_loss_min:.6f}")
             print(f"   - Total epochs trained: {actual_epochs_trained}")
             break
 
-    # 计算总训练时间
+
     total_training_time = time.time() - start_time
 
-    # 收集计算效率统计信息
+ 
     stats = {
-        # 模型识别信息
+    
         'Model_ID': f"vit_model_{'_'.join(map(str, sampling_N_list))}",
         'Sampling_Resolutions': str(sampling_N_list),
         'Training_Date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
 
-        # 数据效率指标
+  
         'Num_Resolutions': len(sampling_N_list),
         'Training_Samples': len(train_dataset),
         'Validation_Samples': len(val_dataset),
         'Data_Reduction_Ratio': f"{len(sampling_N_list)}/{len(sampling_N_combinations[0])}",
         'Efficiency_Gain_Percentage': f"{(1 - len(sampling_N_list) / len(sampling_N_combinations[0])) * 100:.1f}%",
 
-        # 时间效率指标
+ 
         'Total_Training_Time_Seconds': total_training_time,
         'Total_Training_Time_Minutes': total_training_time / 60,
         'Average_Epoch_Time_Seconds': np.mean(epoch_times),
@@ -414,7 +414,7 @@ def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir
         'Min_Epoch_Time_Seconds': np.min(epoch_times),
         'Max_Epoch_Time_Seconds': np.max(epoch_times),
 
-        # 收敛效率指标
+
         'Total_Epochs_Planned': total_epochs,
         'Actual_Epochs_Trained': actual_epochs_trained,
         'Early_Stopping_Triggered': early_stopping.early_stop,
@@ -427,15 +427,15 @@ def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir
     }
 
     print(f"\n{'=' * 80}")
-    print(f"🏁 ViT Training Completed Summary for {sampling_N_list}")
+    print(f" ViT Training Completed Summary for {sampling_N_list}")
     print(f"{'=' * 80}")
-    print(f"✅ Total training time: {total_training_time:.2f}s ({total_training_time / 60:.2f} minutes)")
-    print(f"✅ Average epoch time: {np.mean(epoch_times):.2f}s")
-    print(f"✅ Data reduction: {stats['Efficiency_Gain_Percentage']}")
-    print(f"✅ Actual epochs trained: {actual_epochs_trained}/{total_epochs}")
-    print(f"✅ Final Train Accuracy: {epoch_train_acc:.2f}%")
-    print(f"✅ Final Val Accuracy: {epoch_val_acc:.2f}%")
-    print(f"✅ Best Validation Loss: {early_stopping.val_loss_min:.6f}")
+    print(f" Total training time: {total_training_time:.2f}s ({total_training_time / 60:.2f} minutes)")
+    print(f" Average epoch time: {np.mean(epoch_times):.2f}s")
+    print(f" Data reduction: {stats['Efficiency_Gain_Percentage']}")
+    print(f" Actual epochs trained: {actual_epochs_trained}/{total_epochs}")
+    print(f" Final Train Accuracy: {epoch_train_acc:.2f}%")
+    print(f" Final Val Accuracy: {epoch_val_acc:.2f}%")
+    print(f" Best Validation Loss: {early_stopping.val_loss_min:.6f}")
 
     writer.close()
 
@@ -444,11 +444,11 @@ def train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir
 
 # ========== Main Training Loop for Multiple Models ==========
 if __name__ == "__main__":
-    # 创建DataFrame来存储所有统计信息
+
     all_stats = []
 
     for i, sampling_N_list in enumerate(sampling_N_combinations):
-        # 为每个模型组合创建独立的目录
+       
         sampling_str = "_".join(map(str, sampling_N_list))
         model_save_dir = os.path.join(base_model_save_dir, f"model_{sampling_str}")
         tensorboard_dir = os.path.join(base_tensorboard_dir, f"model_{sampling_str}")
@@ -456,14 +456,14 @@ if __name__ == "__main__":
         os.makedirs(model_save_dir, exist_ok=True)
         os.makedirs(tensorboard_dir, exist_ok=True)
 
-        # 训练当前组合的模型（验证集使用相同的采样组合）
+     
         stats = train_model_with_sampling_N(sampling_N_list, model_save_dir, tensorboard_dir)
         all_stats.append(stats)
 
-    # 将统计信息保存到Excel
+ 
     df = pd.DataFrame(all_stats)
 
-    # 重新排列列的顺序，让重要信息在前面
+  
     column_order = [
         'Model_ID',
         'Sampling_Resolutions',
@@ -490,17 +490,17 @@ if __name__ == "__main__":
 
     df = df[column_order]
 
-    # 保存到Excel
+
     df.to_excel(excel_log_path, index=False, engine='openpyxl')
 
     print(f"\n{'=' * 80}")
-    print(f"🎉 All ViT models training completed!")
-    print(f"📊 Total models trained: {len(sampling_N_combinations)}")
-    print(f"💾 Computational efficiency statistics saved to: {excel_log_path}")
+    print(f" All ViT models training completed!")
+    print(f" Total models trained: {len(sampling_N_combinations)}")
+    print(f" Computational efficiency statistics saved to: {excel_log_path}")
     print(f"{'=' * 80}")
 
-    # 打印计算效率汇总统计
-    print("\n📈 Computational Efficiency Summary:")
+
+    print("\n Computational Efficiency Summary:")
     print(
         f"   Average training time: {df['Total_Training_Time_Seconds'].mean():.2f}s ({df['Total_Training_Time_Minutes'].mean():.2f} minutes)")
     print(f"   Average epoch time: {df['Average_Epoch_Time_Seconds'].mean():.2f}s")
@@ -508,5 +508,6 @@ if __name__ == "__main__":
     print(f"   Average actual epochs: {df['Actual_Epochs_Trained'].mean():.1f}")
 
     print(f"   Average final validation accuracy: {df['Final_Val_Accuracy'].mean():.2f}%")
+
 
 

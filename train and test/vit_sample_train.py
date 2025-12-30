@@ -35,7 +35,7 @@ base_model_save_dir = '/root/autodl-tmp/program/model_vit/model_vit/sample_1/'
 base_tensorboard_dir = '/root/autodl-tmp/tensorboard_logs_vit'
 
 # 早停机制参数
-patience = 10  # 在验证集上性能没有提升的epoch数
+patience = 5  # 在验证集上性能没有提升的epoch数
 min_delta = 0.0001  # 认为有提升的最小变化量
 
 # Excel记录文件路径
@@ -508,4 +508,5 @@ if __name__ == "__main__":
     print(f"   Average actual epochs: {df['Actual_Epochs_Trained'].mean():.1f}")
 
     print(f"   Average final validation accuracy: {df['Final_Val_Accuracy'].mean():.2f}%")
+
 

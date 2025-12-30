@@ -31,7 +31,7 @@ def beta3(N):
     return ((N - 1) ** 2 * term_in_bracket) / L_fixed ** 2
 
 # ========================
-# 📊 Compute H(N)
+# Compute H(N)
 # ========================
 N_start, N_end = 2.0, 28.0
 N_values = np.linspace(N_start, N_end, 5000)
@@ -47,7 +47,7 @@ for i, N in enumerate(N_values):
     H_values[i] = -beta_val * np.log2(beta_val) - (1 - beta_val) * np.log2(1 - beta_val)
 
 # ========================
-# 🔍 Find critical points: N1, N2, N3, N4
+# Find critical points: N1, N2, N3, N4
 # ========================
 valid = ~np.isnan(H_values)
 N_valid = N_values[valid]
@@ -81,14 +81,14 @@ N3 = N_inflection_list[1] if len(N_inflection_list) >= 2 else None
 N4 = N4_theoretical
 
 # Print results
-print(f"\n🔍 Critical N values:")
+print(f"\n Critical N values:")
 print(f"   N4_theoretical (cutoff) = {N4:.6f}")
 if N1 is not None: print(f"   N1 (first inflection) = {N1:.6f}")
 if N2 is not None: print(f"   N2 (maximum) = {N2:.6f}")
 if N3 is not None: print(f"   N3 (second inflection) = {N3:.6f}")
 
 # ========================
-# 🖼️ Plot: Final figure
+# Plot: Final figure
 # ========================
 fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -122,7 +122,7 @@ def get_H_at_N(N_point):
     return H_values[idx]
 
 # 🔸 CONFIGURE LABEL STYLE HERE
-label_fontsize = 14  # ← 可在此调整所有标注的字体大小
+label_fontsize = 14  # 
 
 # Manual label offsets (dx, dy) for each point
 label_offsets = {
@@ -161,5 +161,6 @@ plt.savefig('sampling_confidence_index_segmented_blue.svg', format='svg', bbox_i
 plt.savefig('sampling_confidence_index_segmented_blue.pdf', format='pdf', bbox_inches='tight')
 
 plt.show()
+
 
 print("✅ Saved to 'sampling_confidence_index_segmented_blue.png' and '.svg'")

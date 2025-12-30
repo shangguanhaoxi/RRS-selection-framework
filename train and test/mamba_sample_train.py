@@ -32,7 +32,7 @@ sampling_N_combinations = [
 base_model_save_dir = '/root/autodl-tmp/program/model_mamba/sample_1/'
 base_tensorboard_dir = '/root/autodl-tmp/tensorboard_logs'
 
-patience = 10
+patience = 5
 min_delta = 0.0001
 
 excel_log_path = '/root/autodl-tmp/computational_efficiency_stats.xlsx'
@@ -538,4 +538,5 @@ if __name__ == "__main__":
     print(f"\n🎉 All models training completed!")
 
     print(f"📊 Statistics saved to {excel_log_path}")
+
 
